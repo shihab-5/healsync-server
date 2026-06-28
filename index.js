@@ -3,7 +3,7 @@ const app = express()
 const dotenv = require('dotenv')
 const cors = require('cors')
 dotenv.config()
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 5000;
 
 app.use(cors())
@@ -43,6 +43,36 @@ const run = async () => {
       console.log("new user", newUser);
       res.send(result);
     });
+
+        app.get('/api/doctors',async(req,res)=>{
+      const cursor=doctorCollection.find();
+      const result=await cursor.toArray();
+      res.send(result);
+
+    })
+
+app.get('/api/doctors/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    // Validate if the ID string is a legitimate 24-character hex string before converting
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).send({ error: "Invalid hexadecimal ID format" });
+    }
+
+    const query = { _id: new ObjectId(id) };
+    const doctor = await doctorCollection.findOne(query);
+
+    if (!doctor) {
+      return res.status(404).send({ error: "Doctor profile not found" });
+    }
+
+    res.send(doctor);
+  } catch (error) {
+    console.error("Database query crash:", error);
+    res.status(500).send({ error: "Internal Server Error" });
+  }
+});
 
     await client.connect();
     await client.db("admin").command({ ping: 1 });
