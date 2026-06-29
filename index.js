@@ -36,6 +36,7 @@ const run = async () => {
     const doctorCollection = database.collection("doctors");
     const user = database.collection("user");
     const appointments = database.collection("appointments");
+    const paymentCollection = database.collection("payments");
 
     app.post('/api/doctors', async (req, res) => {
       const newUser = req.body;
@@ -93,7 +94,10 @@ app.get('/api/doctors/:id', async (req, res) => {
                 symptoms,
                 userEmail,
                 userId,
-                consultationFee,} = req.body;
+                consultationFee,
+                status,
+                transactionId,
+             } = req.body;
 
       await appointments.insertOne({
         sessionId,
@@ -104,8 +108,10 @@ app.get('/api/doctors/:id', async (req, res) => {
         symptoms,
         userEmail,
         userId,
-        consultationFee// Convert cents to dollars
-      });
+        consultationFee,
+        status,
+        transactionId, 
+       appointmentStatus:"pending" });
       // const result = await appointments.insertOne(newAppoint);
       // console.log("new appointments", newAppoint);
       res.send({ message: "Appointment created successfully" });
@@ -118,6 +124,38 @@ app.get('/api/doctors/:id', async (req, res) => {
       res.send(result);
 
     })
+
+
+    // payments
+
+    //  app.post('/api/payments', async (req, res) => {
+    //   const {   sessionId,
+    //             doctorId,
+    //             doctorName,
+    //             day,
+    //             slot,
+    //             symptoms,
+    //             userEmail,
+    //             userId,
+    //             consultationFee,} = req.body;
+
+    //   await appointments.insertOne({
+    //     sessionId,
+    //     doctorId,
+    //     doctorName,
+    //     day,
+    //     slot,
+    //     symptoms,
+    //     userEmail,
+    //     userId,
+    //     consultationFee// Convert cents to dollars
+    //   });
+    //   // const result = await appointments.insertOne(newAppoint);
+    //   // console.log("new appointments", newAppoint);
+    //   res.send({ message: "Appointment created successfully" });
+    // });
+
+
 
     // await client.connect();
     // await client.db("admin").command({ ping: 1 });
