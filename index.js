@@ -95,7 +95,7 @@ app.get('/api/doctors/:id', async (req, res) => {
                 symptoms,
                 userEmail,
                 userId,
-                consultationFee} = req.body;
+                consultationFee,} = req.body;
 
       await appointments.insertOne({
         sessionId,
