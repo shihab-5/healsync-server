@@ -6,6 +6,7 @@ dotenv.config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 5000;
 
+
 app.use(cors())
 
 // --- UPDATE THIS SECTION ---
@@ -35,7 +36,8 @@ const run = async () => {
   try {
     const database = client.db("healsync");
     const doctorCollection = database.collection("doctors");
-    const bookings = database.collection("bookings");
+    const user = database.collection("user");
+    const appointments = database.collection("appointments");
 
     app.post('/api/doctors', async (req, res) => {
       const newUser = req.body;
@@ -73,6 +75,51 @@ app.get('/api/doctors/:id', async (req, res) => {
     res.status(500).send({ error: "Internal Server Error" });
   }
 });
+
+    app.get('/user',async(req,res)=>{
+      const cursor=user.find();
+      const result=await cursor.toArray();
+      res.send(result);
+
+    })
+
+
+// appointments
+
+ app.post('/api/appointments', async (req, res) => {
+      const {   sessionId,
+                doctorId,
+                doctorName,
+                day,
+                slot,
+                symptoms,
+                userEmail,
+                userId,
+                consultationFee} = req.body;
+
+      await appointments.insertOne({
+        sessionId,
+        doctorId,
+        doctorName,
+        day,
+        slot,
+        symptoms,
+        userEmail,
+        userId,
+        consultationFee// Convert cents to dollars
+      });
+      // const result = await appointments.insertOne(newAppoint);
+      // console.log("new appointments", newAppoint);
+      res.send({ message: "Appointment created successfully" });
+    });
+
+
+        app.get('/api/appointments',async(req,res)=>{
+      const cursor=appointments.find();
+      const result=await cursor.toArray();
+      res.send(result);
+
+    })
 
     await client.connect();
     await client.db("admin").command({ ping: 1 });
