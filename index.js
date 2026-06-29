@@ -37,6 +37,8 @@ const run = async () => {
     const user = database.collection("user");
     const appointments = database.collection("appointments");
     const paymentCollection = database.collection("payments");
+    const reviewCollection = database.collection("reviews");
+
 
     app.post('/api/doctors', async (req, res) => {
       const newUser = req.body;
@@ -154,6 +156,58 @@ app.get('/api/doctors/:id', async (req, res) => {
     //   // console.log("new appointments", newAppoint);
     //   res.send({ message: "Appointment created successfully" });
     // });
+
+
+
+    // review
+app.post('/api/reviews', async (req, res) => {
+  const { patientId, doctorId, doctorName, rating, reviewText } = req.body;
+
+  const result = await reviewCollection.insertOne({
+    patientId,
+    doctorId,
+    doctorName,
+    rating,
+    reviewText,
+    createdAt: new Date(),
+  });
+
+  res.send(result);
+});
+
+app.get('/api/reviews', async (req, res) => {
+  const cursor = reviewCollection.find();
+  const result = await cursor.toArray();
+  res.send(result);
+});
+
+app.patch('/api/reviews/:id', async (req, res) => {
+  const id = req.params.id;
+
+  if (!ObjectId.isValid(id)) {
+    return res.status(400).send({ error: "Invalid hexadecimal ID format" });
+  }
+
+  const { rating, reviewText } = req.body;
+
+  const result = await reviewCollection.updateOne(
+    { _id: new ObjectId(id) },
+    { $set: { rating, reviewText } }
+  );
+
+  res.send(result);
+});
+
+app.delete('/api/reviews/:id', async (req, res) => {
+  const id = req.params.id;
+
+  if (!ObjectId.isValid(id)) {
+    return res.status(400).send({ error: "Invalid hexadecimal ID format" });
+  }
+
+  const result = await reviewCollection.deleteOne({ _id: new ObjectId(id) });
+  res.send(result);
+});
 
 
 
