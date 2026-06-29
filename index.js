@@ -28,9 +28,7 @@ app.get('/', (req, res) => {
   res.send('Hello World!');
 });
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
-});
+
 
 const run = async () => {
   try {
@@ -121,8 +119,8 @@ app.get('/api/doctors/:id', async (req, res) => {
 
     })
 
-    await client.connect();
-    await client.db("admin").command({ ping: 1 });
+    // await client.connect();
+    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } catch (err) {
     console.error(err);
@@ -130,3 +128,7 @@ app.get('/api/doctors/:id', async (req, res) => {
 }
 
 run().catch(console.dir);
+
+app.listen(port, () => {
+  console.log(`Example app listening on port ${port}`);
+});
