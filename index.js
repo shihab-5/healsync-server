@@ -209,6 +209,35 @@ app.delete('/api/reviews/:id', async (req, res) => {
   res.send(result);
 });
 
+//user
+app.patch('/user/:id', async (req, res) => {
+  const id = req.params.id;
+ 
+  if (!ObjectId.isValid(id)) {
+    return res.status(400).send({ error: "Invalid hexadecimal ID format" });
+  }
+ 
+  const { status } = req.body; // "active" | "suspended"
+ 
+  const result = await user.updateOne(
+    { _id: new ObjectId(id) },
+    { $set: { status } }
+  );
+ 
+  res.send(result);
+});
+ 
+app.delete('/user/:id', async (req, res) => {
+  const id = req.params.id;
+ 
+  if (!ObjectId.isValid(id)) {
+    return res.status(400).send({ error: "Invalid hexadecimal ID format" });
+  }
+ 
+  const result = await user.deleteOne({ _id: new ObjectId(id) });
+  res.send(result);
+});
+
 
 
     // await client.connect();
