@@ -103,27 +103,53 @@ const run = async () => {
 
     })
 
-app.get('/api/doctors/:id', async (req, res) => {
-  try {
-    const id = req.params.id;
+   
+// app.get('/api/doctors/:id', async (req, res) => {
+//   try {
+//     const id = req.params.id;
+//     console.log("Received doctor ID:", id);
 
-    // Validate if the ID string is a legitimate 24-character hex string before converting
-    if (!ObjectId.isValid(id)) {
-      return res.status(400).send({ error: "Invalid hexadecimal ID format" });
-    }
+//     // Validate if the ID string is a legitimate 24-character hex string before converting
+//     if (!ObjectId.isValid(id)) {
+//       return res.status(400).send({ error: "Invalid hexadecimal ID format" });
+//     }
 
-    const query = { _id: new ObjectId(id) };
-    const doctor = await doctorCollection.findOne(query);
+//     const query = { _id: new ObjectId(id) };
+//     console.log("Querying doctor with:", query);
+//     const doctor = await doctorCollection.findOne(query);
 
-    if (!doctor) {
-      return res.status(404).send({ error: "Doctor profile not found" });
-    }
+//     if (!doctor) {
+//       return res.status(404).send({ error: "Doctor profile not found" });
+//     }
 
-    res.send(doctor);
-  } catch (error) {
-    console.error("Database query crash:", error);
-    res.status(500).send({ error: "Internal Server Error" });
+//     res.send(doctor);
+//   } catch (error) {
+//     console.error("Database query crash:", error);
+//     res.status(500).send({ error: "Internal Server Error" });
+//   }
+// });
+
+app.get("/api/doctors/:userId", async (req, res) => {
+  const { userId } = req.params;
+
+  const doctor = await doctorCollection.findOne({
+    userId: userId,
+  });
+
+  if (!doctor) {
+    return res.status(404).send({
+      error: "Doctor not found",
+    });
   }
+
+  res.send(doctor);
+});
+app.get("/api/doctors/user/:userId", async (req, res) => {
+  const { userId } = req.params;
+
+  const doctor = await doctorCollection.findOne({ userId });
+
+  res.send(doctor);
 });
 
     app.get('/user',async(req,res)=>{
