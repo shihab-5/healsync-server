@@ -129,21 +129,43 @@ const run = async () => {
 //   }
 // });
 
-app.get("/api/doctors/:userId", async (req, res) => {
-  const { userId } = req.params;
+// app.get("/api/doctors/:userId", async (req, res) => {
+//   const { userId } = req.params;
 
-  const doctor = await doctorCollection.findOne({
-    userId: userId,
-  });
+//   const doctor = await doctorCollection.findOne({
+//     userId: userId,
+//   });
 
-  if (!doctor) {
-    return res.status(404).send({
-      error: "Doctor not found",
-    });
+//   if (!doctor) {
+//     return res.status(404).send({
+//       error: "Doctor not found",
+//     });
+//   }
+
+//   res.send(doctor);
+// });
+
+app.get('/api/doctors/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).send({ error: "Invalid hexadecimal ID format" });
+    }
+
+    const doctor = await doctorCollection.findOne({ _id: new ObjectId(id) });
+
+    if (!doctor) {
+      return res.status(404).send({ error: "Doctor profile not found" });
+    }
+
+    res.send(doctor);
+  } catch (error) {
+    console.error("Database query crash:", error);
+    res.status(500).send({ error: "Internal Server Error" });
   }
-
-  res.send(doctor);
 });
+
 app.get("/api/doctors/user/:userId", async (req, res) => {
   const { userId } = req.params;
 
