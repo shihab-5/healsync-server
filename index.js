@@ -7,6 +7,10 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const { createRemoteJWKSet } = require('jose-cjs')
 const port = process.env.PORT || 5000;
 
+// --- ADD THIS ---
+// const dns = require('dns');
+// dns.setServers(['8.8.8.8', '1.1.1.1']);
+// ----------------
 
 app.use(cors())
 
@@ -174,12 +178,48 @@ app.get("/api/doctors/user/:userId", async (req, res) => {
   res.send(doctor);
 });
 
-    app.get('/user',async(req,res)=>{
+
+app.patch('/api/doctors/:id', async (req,res)=>{
+  console.log("PATCH /api/doctors/:id called with params:", req.params, "and body:", req.body);
+const {id}=req.params;
+const {verificationStatus}=req.body; 
+const result=await doctorCollection.updateOne(
+  {userId: id},
+  {$set:{verificationStatus}}
+);
+console.log("Update result:", result);
+res.send(result);
+
+
+})
+
+
+// users
+
+app.get('/user',async(req,res)=>{
       const cursor=user.find();
       const result=await cursor.toArray();
       res.send(result);
 
     })
+
+app.patch('/user/:id', async (req, res) => {
+  const {id} = req.params;
+  const { status } = req.body; // "active" | "suspended"
+  const allowedStatuses = ["active", "suspended"];
+
+     if (!allowedStatuses.includes(status)) {
+      return res.status(400).send({
+        success: false,
+        message: "Invalid status",
+      });
+    }
+  const result = await user.updateOne(
+    { _id: new ObjectId(id) },
+    { $set: { status } }
+  );
+  res.send(result);
+});
 
 
 // appointments
