@@ -180,7 +180,7 @@ app.get("/api/doctors/user/:userId", async (req, res) => {
 
 
 app.patch('/api/doctors/:id', async (req,res)=>{
-  console.log("PATCH /api/doctors/:id called with params:", req.params, "and body:", req.body);
+  // console.log("PATCH /api/doctors/:id called with params:", req.params, "and body:", req.body);
 const {id}=req.params;
 const {verificationStatus}=req.body; 
 const result=await doctorCollection.updateOne(
@@ -266,7 +266,7 @@ app.patch('/user/:id', async (req, res) => {
     });
 
 
-        app.get('/api/appointments',async(req,res)=>{
+  app.get('/api/appointments',async(req,res)=>{
       const cursor=appointments.find();
       const result=await cursor.toArray();
       res.send(result);
@@ -279,6 +279,17 @@ app.patch('/user/:id', async (req, res) => {
       const result = await appointments.deleteOne({ _id: new ObjectId(id) });
       res.json({ message: "Appointment deleted successfully", result });})
 
+      app.patch('/api/appointments/:id', async (req, res) => {
+        console.log("PATCH /api/appointments/:id/status called with params:", req.params, "and body:", req.body);
+        const {id}=req.params;
+        const { appointmentStatus } = req.body; // "pending" | "confirmed" | "cancelled"
+   
+        const result= await appointments.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { appointmentStatus } }
+        );
+        res.send(result);
+      });
 
 
 app.patch('/api/appointments/:id', async (req, res) => {
