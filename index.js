@@ -91,6 +91,7 @@ const run = async () => {
     const appointments = database.collection("appointments");
     const paymentCollection = database.collection("payments");
     const reviewCollection = database.collection("reviews");
+    const prescriptions = database.collection("prescriptions");
 
 
     app.post('/api/doctors', async (req, res) => {
@@ -107,47 +108,7 @@ const run = async () => {
 
     })
 
-   
-// app.get('/api/doctors/:id', async (req, res) => {
-//   try {
-//     const id = req.params.id;
-//     console.log("Received doctor ID:", id);
-
-//     // Validate if the ID string is a legitimate 24-character hex string before converting
-//     if (!ObjectId.isValid(id)) {
-//       return res.status(400).send({ error: "Invalid hexadecimal ID format" });
-//     }
-
-//     const query = { _id: new ObjectId(id) };
-//     console.log("Querying doctor with:", query);
-//     const doctor = await doctorCollection.findOne(query);
-
-//     if (!doctor) {
-//       return res.status(404).send({ error: "Doctor profile not found" });
-//     }
-
-//     res.send(doctor);
-//   } catch (error) {
-//     console.error("Database query crash:", error);
-//     res.status(500).send({ error: "Internal Server Error" });
-//   }
-// });
-
-// app.get("/api/doctors/:userId", async (req, res) => {
-//   const { userId } = req.params;
-
-//   const doctor = await doctorCollection.findOne({
-//     userId: userId,
-//   });
-
-//   if (!doctor) {
-//     return res.status(404).send({
-//       error: "Doctor not found",
-//     });
-//   }
-
-//   res.send(doctor);
-// });
+ 
 
 app.get('/api/doctors/:id', async (req, res) => {
   try {
@@ -224,46 +185,148 @@ app.patch('/user/:id', async (req, res) => {
 
 // appointments
 
- app.post('/api/appointments', async (req, res) => {
-      const {   sessionId,
-                doctorId,
-                doctorName,
-                day,
-                slot,
-                symptoms,
-                userEmail,
-                userId,
-                consultationFee,
-                status,
-                transactionId,
-             } = req.body;
+app.post('/api/appointments', async (req, res) => {
+  try {
+    const {
+      doctorId,
+      doctorName,
+      day,
+      slot,
+      symptoms,
+      userEmail,
+      consultationFee,
+      patientId
+    } = req.body;
 
-      await appointments.insertOne({
-        sessionId,
-        doctorId,
-        doctorName,
-        day,
-        slot,
-        symptoms,
-        userEmail,
-        userId,
-        consultationFee,
-        transactionId, 
-       appointmentStatus:"pending" });
-
-       const paymentData = {
-        userId,
-        doctorId,
-        transactionId,
-        paidAt: new Date(),
-        consultationFee,
-      }
-      await paymentCollection.insertOne(paymentData);
-
-      // const result = await appointments.insertOne(newAppoint);
-      // console.log("new appointments", newAppoint);
-      res.send({ message: "Appointment created successfully" });
+    // 3. Insert, using the verified userId — not one trusted from the client body
+    const result = await appointments.insertOne({
+      doctorId,
+      doctorName,
+      day,
+      slot,
+      symptoms: symptoms || '',
+      userEmail,
+      patientId,
+      consultationFee,
+      appointmentStatus: 'pending',
+      paymentStatus:'unpaid',
+      createdAt: new Date(),
     });
+
+    return res.status(201).json({
+      message: 'Appointment created successfully',
+      appointmentId: result.insertedId,
+    });
+  } catch (err) {
+    console.error('Error creating appointment:', err);
+    return res.status(500).json({ error: 'Failed to create appointment' });
+  }
+});
+
+
+// GET a single appointment by id
+app.get('/api/appointments/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const appointment = await appointments.findOne({ _id: new ObjectId(id) });
+
+    if (!appointment) {
+      return res.status(404).send({ error: "Appointment not found" });
+    }
+
+    res.send(appointment);
+  } catch (error) {
+    console.error("Failed to fetch appointment:", error);
+    res.status(500).send({ error: "Failed to fetch appointment" });
+  }
+});
+
+// PATCH an appointment — accepts any subset of these fields
+app.patch('/api/appointments/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { appointmentStatus, paymentStatus, sessionId, transactionId } = req.body;
+
+    const updateFields = {};
+    if (appointmentStatus !== undefined) updateFields.appointmentStatus = appointmentStatus;
+    if (paymentStatus !== undefined) updateFields.paymentStatus = paymentStatus;
+    if (sessionId !== undefined) updateFields.sessionId = sessionId;
+    if (transactionId !== undefined) updateFields.transactionId = transactionId;
+
+    const result = await appointments.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updateFields }
+    );
+
+    res.send(result);
+  } catch (error) {
+    console.error("Failed to update appointment:", error);
+    res.status(500).send({ error: "Failed to update appointment" });
+  }
+});
+//  app.post('/api/appointments', async (req, res) => {
+//       const {   sessionId,
+//                 doctorId,
+//                 doctorName,
+//                 day,
+//                 slot,
+//                 symptoms,
+//                 userEmail,
+//                 userId,
+//                 consultationFee,
+//                 status,
+//                 transactionId,
+//              } = req.body;
+
+      // await appointments.insertOne({
+      //   doctorId,
+      //   doctorName,
+      //   day,
+      //   slot,
+      //   symptoms,
+      //   userEmail,
+      //   userId,
+      //   consultationFee,
+      //  appointmentStatus:"pending" });
+
+//       //  const paymentData = {
+//       //   userId,
+//       //   doctorId,
+//       //   transactionId,
+//       //   paidAt: new Date(),
+//       //   consultationFee,
+//       // }
+//       // await paymentCollection.insertOne(paymentData);
+
+//       // const result = await appointments.insertOne(newAppoint);
+//       // console.log("new appointments", newAppoint);
+//       res.send({ message: "Appointment created successfully" });
+//     });
+
+// POST a payment record
+app.post('/api/payments', async (req, res) => {
+  try {
+    const { appointmentId, userId, doctorId, transactionId, consultationFee, sessionId } = req.body;
+
+    const paymentData = {
+      appointmentId: appointmentId || null,
+      userId: userId || null,
+      doctorId: doctorId || null,
+      transactionId: transactionId || null,
+      sessionId: sessionId || null,
+      consultationFee: consultationFee || 0,
+      paidAt: new Date(),
+    };
+
+    const result = await paymentCollection.insertOne(paymentData);
+    res.send({ success: true, data: { ...paymentData, _id: result.insertedId } });
+  } catch (error) {
+    console.error("Failed to record payment:", error);
+    res.status(500).send({ success: false, error: "Failed to record payment" });
+  }
+});
+
+
 
 
   app.get('/api/appointments',async(req,res)=>{
@@ -441,6 +504,75 @@ app.delete('/user/:id', async (req, res) => {
   res.send(result);
 });
 
+
+//prescriptions
+
+// GET all prescriptions (optionally filter by doctorId)
+app.get('/api/prescriptions', async (req, res) => {
+  const { doctorId, appointmentId, userId } = req.query;
+
+  const filter = {};
+  if (doctorId) filter.doctorId = doctorId;
+  if (appointmentId) filter.appointmentId = appointmentId;
+  if (userId) filter.userId = userId;
+
+  const result = await prescriptions.find(filter).sort({ createdAt: -1 }).toArray();
+  res.send(result);
+});
+
+// CREATE a prescription
+app.post('/api/prescriptions', async (req, res) => {
+  try {
+    const data = req.body;
+    const newPrescription = {
+      patientName: data.patientName,
+      userId: data.userId || null,
+      doctorId: data.doctorId || null,
+      appointmentId: data.appointmentId || null,
+      date: data.date || new Date().toISOString().split("T")[0],
+      diagnosis: data.diagnosis || "",
+      medications: data.medications || [],
+      notes: data.notes || "",
+      createdAt: new Date().toISOString(),
+    };
+    const result = await prescriptions.insertOne(newPrescription);
+    res.send({ success: true, data: { ...newPrescription, _id: result.insertedId } });
+  } catch (error) {
+    console.error("Failed to create prescription:", error);
+    res.status(500).send({ success: false, error: "Failed to create prescription" });
+  }
+});
+
+// UPDATE a prescription
+app.patch('/api/prescriptions/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = req.body;
+
+    const updateFields = {
+      ...(data.patientName !== undefined && { patientName: data.patientName }),
+      ...(data.diagnosis !== undefined && { diagnosis: data.diagnosis }),
+      ...(data.medications !== undefined && { medications: data.medications }),
+      ...(data.notes !== undefined && { notes: data.notes }),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const result = await prescriptions.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updateFields }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).send({ success: false, error: "Prescription not found" });
+    }
+
+    const updated = await prescriptions.findOne({ _id: new ObjectId(id) });
+    res.send({ success: true, data: updated });
+  } catch (error) {
+    console.error("Failed to update prescription:", error);
+    res.status(500).send({ success: false, error: "Failed to update prescription" });
+  }
+});
 
 
     // await client.connect();
